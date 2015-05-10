@@ -1,0 +1,4 @@
+[package]
+name = "calcurust"
+version = "0.1.0"
+authors = ["Thomas Kluyver <takowl@gmail.com>"]
