@@ -46,13 +46,17 @@ fn main() {
                 "-" => subtract(&mut stack),
                 "*" => multiply(&mut stack),
                 "/" => divide(&mut stack),
-                "" => continue,
+                "" => (),
                 _ => match i32::from_str(token) {
                     Ok(i) => stack.push_front(i),
                     Err(_) => panic!("Invalid integer: {}", token)
                 }
             }
         }
-        println!("= {}", stack.front().unwrap());
+
+        match stack.front() {
+            Some(i) => println!("= {}", i),
+            None => (),
+        }
     }
 }
