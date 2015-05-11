@@ -1,6 +1,5 @@
 use std::io::Write;
 use std::collections::LinkedList;
-use std::str::FromStr;
 
 fn input_line(prompt: &str) -> Result<String, std::io::Error> {
     let mut stdout = std::io::stdout();
@@ -47,7 +46,7 @@ fn main() {
                 "*" => multiply(&mut stack),
                 "/" => divide(&mut stack),
                 "" => (),
-                _ => match i32::from_str(token) {
+                _ => match token.parse::<i32>() {
                     Ok(i) => stack.push_front(i),
                     Err(_) => {
                         println!("Invalid integer: {}", token);
