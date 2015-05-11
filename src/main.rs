@@ -49,7 +49,10 @@ fn main() {
                 "" => (),
                 _ => match i32::from_str(token) {
                     Ok(i) => stack.push_front(i),
-                    Err(_) => panic!("Invalid integer: {}", token)
+                    Err(_) => {
+                        println!("Invalid integer: {}", token);
+                        break;
+                    }
                 }
             }
         }
