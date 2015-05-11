@@ -36,20 +36,23 @@ fn divide(stack: &mut LinkedList<i32>) {
 }
 
 fn main() {
-    let line = input_line("> ").ok().expect("Failed to read stdin");
     let mut stack = LinkedList::new();
-    for token in line.trim().split(' ') {
-        match token {
-            "+" => add(&mut stack),
-            "-" => subtract(&mut stack),
-            "*" => multiply(&mut stack),
-            "/" => divide(&mut stack),
-            "" => continue,
-            _ => match i32::from_str(token) {
-                Ok(i) => stack.push_front(i),
-                Err(_) => panic!("Invalid integer: {}", token)
+    loop {
+        let line = input_line("> ").ok().expect("Failed to read stdin");
+        if line.starts_with('q') { break; }
+        for token in line.trim().split(' ') {
+            match token {
+                "+" => add(&mut stack),
+                "-" => subtract(&mut stack),
+                "*" => multiply(&mut stack),
+                "/" => divide(&mut stack),
+                "" => continue,
+                _ => match i32::from_str(token) {
+                    Ok(i) => stack.push_front(i),
+                    Err(_) => panic!("Invalid integer: {}", token)
+                }
             }
         }
+        println!("= {}", stack.front().unwrap());
     }
-    println!("= {}", stack.pop_front().unwrap());
 }
