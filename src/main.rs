@@ -11,7 +11,7 @@ extern crate uuid;
 extern crate chrono;
 
 mod messaging;
-use messaging::Message;
+use messaging::{Channel, Message};
 
 fn input_line(prompt: &str) -> Result<String, std::io::Error> {
     let mut stdout = std::io::stdout();
@@ -93,7 +93,7 @@ fn kernel_info(msg: &messaging::Message, sockets: &messaging::KernelSockets) {
         },
         "banner": "Reverse polish notation calculator",
     }));
-    messaging::send_msg(resp, &sockets.shell, &sockets.key);
+    sockets.send_msg(resp, Channel::Shell);
 }
 
 fn execute(msg: &messaging::Message, sockets: &messaging::KernelSockets, stack: &mut LinkedList<i32>,
@@ -109,12 +109,12 @@ fn execute(msg: &messaging::Message, sockets: &messaging::KernelSockets, stack: 
                         "metadata": {},
                         "execution_count": exec_count,
                     }));
-                    messaging::send_msg(display_msg, &sockets.iopub, &sockets.key);
+                    sockets.send_msg(display_msg, Channel::Iopub);
                     let reply_msg = Message::prepare_reply("execute_reply", msg, json!({
                         "status": "ok",
                         "execution_count": exec_count,
                     }));
-                    messaging::send_msg(reply_msg, &sockets.shell, &sockets.key);
+                    sockets.send_msg(reply_msg, Channel::Shell);
                 },
                 None => (),
             }

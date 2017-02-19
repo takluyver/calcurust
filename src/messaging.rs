@@ -87,33 +87,12 @@ pub fn parse_msg(msgparts: Vec<Vec<u8>>, key: &str) -> Message {
     }
 }
 
-pub fn send_msg(msg: Message, socket: &zmq::Socket, key: &str) {
-    let mut parts: Vec<zmq::Message> = Vec::new();
-    for id in msg.identities {
-        parts.push(zmq::Message::from_slice(&id).unwrap());
-    }
-    parts.push(zmq::Message::from_slice(b"<IDS|MSG>").unwrap());
-    let content_parts = vec![
-        serde_json::to_vec(&msg.header).unwrap(),
-        serde_json::to_vec(&msg.parent_header).unwrap(),
-        serde_json::to_vec(&msg.metadata).unwrap(),
-        serde_json::to_vec(&msg.content).unwrap()
-    ];
-    let signature = sign_msg_parts(key, &content_parts);
-    let hex_sig = signature.code().to_hex();
-    parts.push(zmq::Message::from_slice(hex_sig.as_bytes()).unwrap());
-    for part in content_parts {
-        parts.push(zmq::Message::from_slice(&part).unwrap());
-    }
-    
-    let (last_part, first_parts) = parts.split_last().unwrap();
-
-    for part in first_parts.iter() {
-        socket.send(part, zmq::SNDMORE).unwrap();
-    }
-    socket.send(last_part, 0).unwrap();
+pub enum Channel {
+    Heartbeat,
+    Shell,
+    Control,
+    Iopub,
 }
-
 
 pub struct KernelSockets {
     pub shell: zmq::Socket,
@@ -149,7 +128,45 @@ impl KernelSockets {
             metadata: json!({}),
             content: json!({"execution_state": status}),
         };
-        send_msg(msg, &self.iopub, &self.key);
+        self.send_msg(msg, Channel::Iopub);
+    }
+    
+    fn select(&self, chan: Channel) -> &zmq::Socket {
+        // use self::Channel::*;
+        match chan {
+            Channel::Heartbeat => &self.hb,
+            Channel::Shell => &self.shell,
+            Channel::Control => &self.control,
+            Channel::Iopub => &self.iopub,
+        }
+    }
+    
+    pub fn send_msg(&self, msg: Message, chan: Channel) {
+        let mut parts: Vec<zmq::Message> = Vec::new();
+        for id in msg.identities {
+            parts.push(zmq::Message::from_slice(&id).unwrap());
+        }
+        parts.push(zmq::Message::from_slice(b"<IDS|MSG>").unwrap());
+        let content_parts = vec![
+            serde_json::to_vec(&msg.header).unwrap(),
+            serde_json::to_vec(&msg.parent_header).unwrap(),
+            serde_json::to_vec(&msg.metadata).unwrap(),
+            serde_json::to_vec(&msg.content).unwrap()
+        ];
+        let signature = sign_msg_parts(&self.key, &content_parts);
+        let hex_sig = signature.code().to_hex();
+        parts.push(zmq::Message::from_slice(hex_sig.as_bytes()).unwrap());
+        for part in content_parts {
+            parts.push(zmq::Message::from_slice(&part).unwrap());
+        }
+        
+        let (last_part, first_parts) = parts.split_last().unwrap();
+
+        let socket = self.select(chan);
+        for part in first_parts.iter() {
+            socket.send(part, zmq::SNDMORE).unwrap();
+        }
+        socket.send(last_part, 0).unwrap();
     }
 }
 
