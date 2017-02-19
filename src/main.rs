@@ -34,27 +34,31 @@ fn divide(stack: &mut LinkedList<i32>) {
     stack.push_front(n2 / n1);
 }
 
+fn calculate(stack: &mut LinkedList<i32>, line: String) {
+    for token in line.trim().split(' ') {
+        match token {
+            "+" => add(stack),
+            "-" => subtract(stack),
+            "*" => multiply(stack),
+            "/" => divide(stack),
+            "" => (),
+            _ => match token.parse::<i32>() {
+                Ok(i) => stack.push_front(i),
+                Err(_) => {
+                    println!("Invalid integer: {}", token);
+                    break;
+                }
+            }
+        }
+    }
+}
+
 fn main() {
     let mut stack = LinkedList::new();
     loop {
         let line = input_line("> ").ok().expect("Failed to read stdin");
         if line.starts_with('q') { break; }
-        for token in line.trim().split(' ') {
-            match token {
-                "+" => add(&mut stack),
-                "-" => subtract(&mut stack),
-                "*" => multiply(&mut stack),
-                "/" => divide(&mut stack),
-                "" => (),
-                _ => match token.parse::<i32>() {
-                    Ok(i) => stack.push_front(i),
-                    Err(_) => {
-                        println!("Invalid integer: {}", token);
-                        break;
-                    }
-                }
-            }
-        }
+        calculate(&mut stack, line);
 
         match stack.front() {
             Some(i) => println!("= {}", i),
