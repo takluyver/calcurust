@@ -1,5 +1,5 @@
 #[derive(Serialize, Deserialize, Debug)]
-struct ConnectInfo {
+pub struct ConnectInfo {
     ip: String,
     transport: String,
     key: String,
@@ -13,11 +13,11 @@ struct ConnectInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-struct MsgHeader {
+pub struct MsgHeader {
     msg_id: String,
     username: String,
-    session: String,
+    pub session: String,
     date: Option<chrono::DateTime<chrono::UTC>>,
-    msg_type: String,
+    pub msg_type: String,
     version: String,
 }
