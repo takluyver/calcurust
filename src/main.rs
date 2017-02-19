@@ -11,6 +11,7 @@ extern crate uuid;
 extern crate chrono;
 
 mod messaging;
+use messaging::Message;
 
 fn input_line(prompt: &str) -> Result<String, std::io::Error> {
     let mut stdout = std::io::stdout();
@@ -80,7 +81,7 @@ fn main_cmdline() {
 
 
 fn kernel_info(msg: &messaging::Message, sockets: &messaging::KernelSockets) {
-    let info = json!({
+    let resp = Message::prepare_reply("kernel_info_reply", &msg, json!({
         "protocol_version": "5.0",
         "implementation": "calcurust",
         "implementation_version": "0.1",
@@ -91,14 +92,7 @@ fn kernel_info(msg: &messaging::Message, sockets: &messaging::KernelSockets) {
             "file_extension": ".txt",
         },
         "banner": "Reverse polish notation calculator",
-    });
-    let resp = messaging::Message {
-        identities: msg.identities.clone(),
-        header: messaging::MsgHeader::new("kernel_info_reply", &msg.header.session),
-        parent_header: Some(msg.header.clone()),
-        metadata: json!({}),
-        content: info,
-    };
+    }));
     messaging::send_msg(resp, &sockets.shell, &sockets.key);
 }
 
@@ -110,30 +104,16 @@ fn execute(msg: &messaging::Message, sockets: &messaging::KernelSockets, stack: 
             calculate(stack, code.clone());
             match stack.front() {
                 Some(i) => {
-                    let display_content = json!({
+                    let display_msg = Message::prepare_reply("execute_result", msg, json!({
                         "data" : {"text/plain": i.to_string()},
                         "metadata": {},
                         "execution_count": exec_count,
-                    });
-                    let display_msg = messaging::Message{
-                        identities: msg.identities.clone(),
-                        header: messaging::MsgHeader::new("execute_result", &msg.header.session),
-                        parent_header: Some(msg.header.clone()),
-                        metadata: json!({}),
-                        content: display_content,
-                    };
+                    }));
                     messaging::send_msg(display_msg, &sockets.iopub, &sockets.key);
-                    let reply_content = json!({
+                    let reply_msg = Message::prepare_reply("execute_reply", msg, json!({
                         "status": "ok",
                         "execution_count": exec_count,
-                    });
-                    let reply_msg = messaging::Message {
-                        identities: msg.identities.clone(),
-                        header: messaging::MsgHeader::new("execute_reply", &msg.header.session),
-                        parent_header: Some(msg.header.clone()),
-                        metadata: json!({}),
-                        content: reply_content,
-                    };
+                    }));
                     messaging::send_msg(reply_msg, &sockets.shell, &sockets.key);
                 },
                 None => (),

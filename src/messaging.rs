@@ -44,6 +44,18 @@ pub struct Message {
     pub content: serde_json::Value,
 }
 
+impl Message {
+    pub fn prepare_reply(msg_type: &str, parent: &Message, content: serde_json::Value) -> Message {
+        Message {
+            identities: parent.identities.clone(),
+            header: MsgHeader::new(msg_type, &parent.header.session),
+            parent_header: Some(parent.header.clone()),
+            metadata: json!({}),
+            content: content,
+        }
+    }
+}
+
 fn sign_msg_parts(key: &str, msgparts: &[Vec<u8>]) -> MacResult {
     let mut hmac = Hmac::new(Sha256::new(), key.as_bytes());
     for p in msgparts {
