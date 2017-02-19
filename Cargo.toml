@@ -2,3 +2,16 @@
 name = "calcurust"
 version = "0.1.0"
 authors = ["Thomas Kluyver <takowl@gmail.com>"]
+build = "build.rs"
+
+[build-dependencies]
+serde_codegen = "0.9"
+
+[dependencies]
+zmq = "0.8.1"
+serde = "0.9.7"
+serde_json = "0.9.6"
+rust-crypto = "0.2.36"
+rustc-serialize = "0.3"
+uuid = { version = "0.4", features = ["serde", "v4"] }
+chrono = { version = "0.3", features = ["serde"] }
