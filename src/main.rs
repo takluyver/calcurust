@@ -149,30 +149,10 @@ fn main() {
     let mut exec_count = 0;
     let connect_info = messaging::read_connection_file();
     let sockets = messaging::KernelSockets::new(&connect_info);
-    //send_status("idle", sockets, )
-    
-    let mut poll_items = [
-        sockets.shell.as_poll_item(zmq::POLLIN),
-        sockets.control.as_poll_item(zmq::POLLIN),
-        sockets.hb.as_poll_item(zmq::POLLIN),
-    ];
+
     loop {
-        zmq::poll(&mut poll_items, -1).unwrap();
-        let mut shutdown = false;
-        if poll_items[0].is_readable() {
-            let rawmsg = sockets.shell.recv_multipart(0).unwrap();
-            let msg = messaging::parse_msg(rawmsg, &sockets.key);
-            shutdown = dispatch_shell_msg(msg, &sockets, &mut stack, &mut exec_count);
-        }
-        if poll_items[1].is_readable() {
-            let rawmsg = sockets.control.recv_multipart(0).unwrap();
-            let msg = messaging::parse_msg(rawmsg, &sockets.key);
-            shutdown = dispatch_shell_msg(msg, &sockets, &mut stack, &mut exec_count);
-        }
-        if poll_items[2].is_readable() {
-            let hbmsg = sockets.hb.recv_bytes(0).unwrap();
-            sockets.hb.send(&hbmsg, 0).unwrap();
-        }
+        let msg = sockets.recv_shell_msg();
+        let shutdown = dispatch_shell_msg(msg, &sockets, &mut stack, &mut exec_count);
         if shutdown {
             break;
         }

@@ -64,7 +64,7 @@ fn sign_msg_parts(key: &str, msgparts: &[Vec<u8>]) -> MacResult {
     hmac.result()
 }
 
-pub fn parse_msg(msgparts: Vec<Vec<u8>>, key: &str) -> Message {
+fn parse_msg(msgparts: Vec<Vec<u8>>, key: &str) -> Message {
     let mut i = msgparts.split(|ref p| p.as_slice() == b"<IDS|MSG>");
     let identities = i.next().unwrap();
     let msgdata = i.next().unwrap();
@@ -167,6 +167,30 @@ impl KernelSockets {
             socket.send(part, zmq::SNDMORE).unwrap();
         }
         socket.send(last_part, 0).unwrap();
+    }
+    
+    pub fn recv_shell_msg(&self) -> Message {
+        let mut poll_items = [
+            self.hb.as_poll_item(zmq::POLLIN),
+            self.control.as_poll_item(zmq::POLLIN),
+            self.shell.as_poll_item(zmq::POLLIN),
+        ];
+        loop {
+            zmq::poll(&mut poll_items, -1).unwrap();
+            if poll_items[0].is_readable() {
+                let hbmsg = self.hb.recv_bytes(0).unwrap();
+                self.hb.send(&hbmsg, 0).unwrap();
+                continue;
+            }
+            if poll_items[1].is_readable() {
+                let rawmsg = self.control.recv_multipart(0).unwrap();
+                return parse_msg(rawmsg, &self.key);
+            }
+            if poll_items[2].is_readable() {
+                let rawmsg = self.shell.recv_multipart(0).unwrap();
+                return parse_msg(rawmsg, &self.key);
+            }
+        }
     }
 }
 
